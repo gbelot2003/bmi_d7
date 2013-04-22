@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * @file
+ * Module file for menu_example.
+ */
+
+/*
+* Implemet hook_permission
+*/
+
+function bmi_permission() {
+  return array(
+    'use bmi' => array(
+      'title' => t('administer Bootstrap Menu Icon'),
+      'description' => t('Add icon names to Bootstrap Menu Icon.'),
+    ),
+  );
+}
+
+function bmi_form_alter(&$form, &$form_state, $form_id){
+	if($form_id == "menu_edit_item"){
+		$item = $form['original_item']['#value']['mlid'];
+		$result = get_icons_name($item);
+		if($result == false){
+			$res = "";
+		} else {
+			$res = $result;
+		}
+
+		$form['bmi_icon_name'] = array(
+			'#type' => 'textfield',
+			'#title' => t('Bootstrap Icon Name'),
+			'#description' => t('Name of the Bootstrap Icon shold render for this menu item'),
+			'#weight' => 1,
+			'#default_value' =>t($res),
+		);
+	}
+	$form['#validate'][] = "bmi_form_validate";
+	$form['#submit'][] = "bmi_form_submit";
+}
+
+function bmi_form_validate(&$form, &$form_state){
+	if(is_numeric($form_state['values']['bmi_icon_name'])){
+			form_set_error('bmi_icon_name', t('You must enter a text'));
+	}
+}
+
+function bmi_form_submit(&$form, &$form_state){
+	$item = $form['original_item']['#value']['mlid'];
+	$name = $form_state['values']['bmi_icon_name'];
+	set_icons_name($item, $name);
+}
+
+function set_icons_name($items, $name){
+    $result = db_merge('bmi')
+    ->key(array(
+    	'bmi_id' => $items,
+    	))
+	->insertFields(array(
+		'bmi_id' => $items,
+		'iname' => $name,
+		))
+    ->updateFields(array(
+       	'iname' => $name,
+        ))
+        ->execute();
+    return $result;
+}
+
+function get_icons_name($items){
+  $result = db_select('bmi', 'b')
+    ->fields('b', array('iname'))
+    ->condition('bmi_id', $items, '=')
+    ->execute();
+ 	return $result->fetchField();
+}
+
+function bmi_menu_link(array $variables) {
+	$element = $variables['element'];
+	$sub_menu = '';
+
+	if ($element['#below']) {
+		$sub_menu = drupal_render($element['#below']);
+	}
+
+	if ($element['#original_link']['menu_name'] == 'main-menu') {
+		$linkText = '<span>' . $element['#title'] . '</span>';
+		$element['#localized_options']['html'] = true;
+	} else {
+		$linkText = $element['#title'];
+	}
+
+	$output = l($linkText, $element['#href'], $options = $element['#localized_options']);
+
+	return '<li' . drupal_attributes($element['#attributes']) . '>' . $output . $sub_menu . "</li>\n";
+}

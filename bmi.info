@@ -1,0 +1,7 @@
+name = Bootstrap Menu Icon (bmi)
+description = This module abailable  menu icon name option on menu form to set a name for the bootrap icon 
+package = Personal Modules Develomet
+core = 7.x
+
+
+
